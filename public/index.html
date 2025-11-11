@@ -10,6 +10,7 @@
     button { padding: 10px 20px; border: none; background: #007bff; color: white; border-radius: 6px; cursor: pointer; }
     button:hover { background: #0056b3; }
     img { margin-top: 20px; max-width: 100%; border-radius: 12px; }
+    #error { color: red; margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -18,14 +19,24 @@
   <input type="text" id="imageUrl" placeholder="Paste source image URL">
   <button onclick="generate()">Generate Edit</button>
   <div id="result"></div>
+  <div id="error"></div>
 
   <script>
     async function generate() {
       const prompt = document.getElementById("prompt").value.trim();
       const imageUrl = document.getElementById("imageUrl").value.trim();
       const result = document.getElementById("result");
-      if (!prompt || !imageUrl) return result.textContent = "Please enter both prompt and image URL.";
-      result.textContent = "⏳ Generating...";
+      const errorDiv = document.getElementById("error");
+
+      errorDiv.textContent = "";
+      result.innerHTML = "";
+
+      if (!prompt || !imageUrl) {
+        errorDiv.textContent = "⚠️ Please enter both a prompt and a valid image URL.";
+        return;
+      }
+
+      result.textContent = "⏳ Generating edit...";
 
       try {
         const res = await fetch("/generate", {
@@ -33,14 +44,18 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt, imageUrl })
         });
+
         const data = await res.json();
+
         if (data.image_url) {
-          result.innerHTML = `<img src="${data.image_url}" alt="Result">`;
+          result.innerHTML = `<img src="${data.image_url}" alt="Generated result">`;
         } else {
-          result.textContent = "Error: " + data.error;
+          errorDiv.textContent = "❌ Error: " + (data.error || "Unknown error");
+          result.textContent = "";
         }
       } catch (err) {
-        result.textContent = "Error connecting to server.";
+        errorDiv.textContent = "❌ Connection error: " + err.message;
+        result.textContent = "";
       }
     }
   </script>
