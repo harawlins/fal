@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seedream 4.0 Edit</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; text-align: center; }
+    input, textarea { width: 100%; margin: 8px 0; padding: 10px; border-radius: 6px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; border: none; background: #007bff; color: white; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    img { margin-top: 20px; max-width: 100%; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <h2>🪄 Seedream 4.0 Edit</h2>
+  <textarea id="prompt" placeholder="Describe how to edit the image..."></textarea>
+  <input type="text" id="imageUrl" placeholder="Paste source image URL">
+  <button onclick="generate()">Generate Edit</button>
+  <div id="result"></div>
+
+  <script>
+    async function generate() {
+      const prompt = document.getElementById("prompt").value.trim();
+      const imageUrl = document.getElementById("imageUrl").value.trim();
+      const result = document.getElementById("result");
+      if (!prompt || !imageUrl) return result.textContent = "Please enter both prompt and image URL.";
+      result.textContent = "⏳ Generating...";
+
+      try {
+        const res = await fetch("/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt, imageUrl })
+        });
+        const data = await res.json();
+        if (data.image_url) {
+          result.innerHTML = `<img src="${data.image_url}" alt="Result">`;
+        } else {
+          result.textContent = "Error: " + data.error;
+        }
+      } catch (err) {
+        result.textContent = "Error connecting to server.";
+      }
+    }
+  </script>
+</body>
+</html>
