@@ -1,45 +1,41 @@
-// Simple Node.js + Express server for FAL AI image generation
 import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
-
-// Serve index.html
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use(express.static(__dirname));
+app.use(express.static("public"));  // or serve index.html directly
 
 app.post("/generate", async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, imageUrl } = req.body;  // assume frontend sends imageUrl
 
-    // Replace this with the correct endpoint, e.g. "fal-ai/seedream"
-    const falModel = "fal-ai/seedream";
-
-    const response = await fetch(`https://api.fal.ai/v1/${falModel}`, {
+    const response = await fetch("https://api.fal.ai/v1/fal-ai/bytedance/seedream/v4/edit", {
       method: "POST",
       headers: {
         "Authorization": `Key ${process.env.FAL_KEY}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({
+        prompt,
+        image_urls: [ imageUrl ],
+        // you can also include optional params:
+        // image_size: "square_hd",
+        // num_images: 1,
+        // seed: 12345,
+        // enable_safety_checker: true,
+      })
     });
 
     const result = await response.json();
-
-    // Adjust depending on the actual structure returned by FAL
-    const image_url = result.image?.url || result?.images?.[0]?.url;
-
+    const image_url = result.images?.[0]?.url;
+    if (!image_url) throw new Error("No image URL returned");
     res.json({ image_url });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error generating image" });
+    console.error("Error calling FAL edit:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
