@@ -9,15 +9,16 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// serve static frontend files
+// Serve static frontend files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
-// FAL Seedream 4.0 Edit endpoint
+// === FAL Seedream 4.0 Edit endpoint ===
 app.post("/generate", async (req, res) => {
   try {
     const { prompt, imageUrl } = req.body;
+
     if (!prompt || !imageUrl) {
       return res.status(400).json({ error: "Missing prompt or imageUrl" });
     }
@@ -36,17 +37,30 @@ app.post("/generate", async (req, res) => {
     });
 
     const data = await response.json();
+
+    // Log for debugging (you can check this in Render logs)
+    console.log("FAL API response:", JSON.stringify(data, null, 2));
+
+    // Handle any FAL error response
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.error?.message || data.message || JSON.stringify(data)
+      });
+    }
+
     const image_url = data.images?.[0]?.url;
-    if (!image_url) throw new Error(data.error || "No image returned from FAL");
+    if (!image_url) {
+      return res.status(500).json({ error: "No image URL returned from FAL" });
+    }
 
     res.json({ image_url });
   } catch (err) {
-    console.error(err);
+    console.error("Error calling FAL edit:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// fallback: send index.html if route not found
+// Fallback to index.html for any non-API route
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
